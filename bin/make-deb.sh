@@ -1,5 +1,7 @@
 #!/bin/bash
 
+fatecho() {  echo -e "\n$1\n" }
+
 DEBUG= # 'v' for verbose t?ar
 
 export nbPort=80
@@ -17,14 +19,10 @@ while getopts "p:tu:" opt; do
       ;;
     t)
       if [ -e nodeb_templates ] ; then
-        echo
-        echo \"nodeb_templates\" exists, delete it first. Not executing.
-        echo
+        fatecho \"nodeb_templates\" exists, delete it first. Not executing. >&2
       else
         cp -a $dir/../templates nodeb_templates/
-        echo
         echo nodeb_templates/ created.
-        echo
       fi
       exit 0
       ;;
@@ -123,7 +121,20 @@ start $Name
 EOD
 
 cat > $TDIR/preinst <<EOD
-ln -f -s /usr/bin/nodejs /usr/bin/node
+if [ \! -x /usr/bin/nodejs ] ; then
+  echo
+  echo /usr/bin/nodejs is required. Abort.
+  echo 
+  exit 1
+fi  
+if id $nbUser > /dev/null 2>&1 ; then
+  ln -f -s /usr/bin/nodejs /usr/bin/node
+else
+  echo
+  echo Please create user "$nbUser" first.  Abort.
+  echo 
+  exit 1
+fi
 EOD
 
 cat > $TDIR/prerm <<EOD
@@ -155,8 +166,6 @@ echo 2.0 > debian-binary
 debfile=$pdir/$Package.deb
 ar r$DEBUG $debfile debian-binary control.tar.gz data.tar.gz 2>/dev/null
 
-echo
-echo $debfile created.
-echo
+fatecho $debfile created.
 
 )
