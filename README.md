@@ -10,7 +10,7 @@ From your project's root:
 
     nodeb
 
-If all goes well, `<project name>.deb file will be created.
+If all goes well, `<project name>.deb` file will be created.
 
 ### Options
 
