@@ -96,6 +96,8 @@ for src in *; do
 
   mkdir -p $RDIR/$dstdir
   envsubst < $src > $RDIR/$dst
+  # echo ------
+  # cat $RDIR/$dst
 done
 
 cat > $TDIR/control <<EOD
@@ -110,8 +112,9 @@ Description: $Description
 EOD
 
 cat > $TDIR/postinst <<EOD
+chown -R $nbUser /opt/$Package
 if [ \! -d /opt/$Package/node_modules ] ; then
-  echo "Running npm..."
+  echo "Running npm...."
   cd /opt/$Package
   sudo -H -u $nbUser npm i
 fi
@@ -126,6 +129,7 @@ EOD
 cat > $TDIR/prerm <<EOD
 echo "Stopping $Name"
 stop $Name
+exit 0
 EOD
 
 cd $TDIR
