@@ -21,4 +21,10 @@ If all goes well, `<project name>.deb file will be created.
 ### What's included
 
 Files for upstart, monit, and logrotate are created.  If node_modules was absent, `npm install`
-will be run on target syste.m
+will be run on target system.
+
+### References
+
+http://blog.coolaj86.com/articles/how-to-create-a-debian-installer.html
+
+https://synack.me/blog/deploying-code-with-packages
