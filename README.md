@@ -14,12 +14,12 @@ If all goes well, `<project name>.deb` file will be created.
 
 ### Options
 
-   -p <port to monitor> (default 80) 
-   -s also generate nginx config for SSL server
-   -t copy templates to nodeb_templates/ for customization and exit
-   -u <user to run processes as> (default "node")
-   -v show generated files to stdout
-   -w <production website address>. If given, nginx config files will be created
+    -p <port to monitor> (default 80) 
+    -s also generate nginx config for SSL server
+    -t copy templates to nodeb_templates/ for customization and exit
+    -u <user to run processes as> (default "node")
+    -v show generated files to stdout
+    -w <production website address>. If given, nginx config files will be created
 
 ### What's included
 
