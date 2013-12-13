@@ -1,0 +1,27 @@
+server {
+    listen 443;
+
+    server_name $nbWeb;
+
+    ssl    on; 
+    ssl_certificate        cert/localhost.pem; 
+    ssl_certificate_key    cert/localhost.key; 
+
+    add_header Strict-Transport-Security max-age=500; 
+
+    location / {
+        proxy_pass http://unix:/var/run/proxy.sock/www.localnet.443:$uri$is_args$args;
+        #proxy_pass http://localhost:3443;
+        proxy_cache_bypass $http_upgrade;
+        proxy_redirect off;
+        proxy_http_version 1.1;
+
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-NginX-Proxy true;
+        proxy_set_header X-SSL 1;
+    }
+}

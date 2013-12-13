@@ -1,21 +1,26 @@
 #!/bin/bash
 
-fatecho() {  echo -e "\n$1\n" }
+fatecho() {  echo -e '\E[31m' "\n$1\n" '\e[0m' ; }
 
 DEBUG= # 'v' for verbose t?ar
 
 export nbPort=80
 export nbUser=node
+export nbWeb=
+export nbSsl=
 
 dir=`dirname $(readlink -f $0)`
 
-while getopts "p:tu:" opt; do
+while getopts "p:tu:w:sv" opt; do
   case $opt in
     u)
       nbUser=$OPTARG
       ;;
     p)
       nbPort=$OPTARG
+      ;;
+    s)
+      nbSsl=1
       ;;
     t)
       if [ -e nodeb_templates ] ; then
@@ -26,14 +31,23 @@ while getopts "p:tu:" opt; do
       fi
       exit 0
       ;;
+    v)
+     verbose=1
+     ;;
+    w)
+     nbWeb=$OPTARG
+     ;;
     \?)
       cat <<-EOH >&2
 
   Valid options:
 
   -p <port to monitor> (default 80) 
-  -t copy templates to nodeb_templates/ for customization
+  -s also generate nginx config for SSL server
+  -t copy templates to nodeb_templates/ for customization and exit
   -u <user to run processes as> (default "node")
+  -v show generated files to stdout
+  -w <production website address>. If given, nginx config files will be created
 
 EOH
       exit 1
@@ -66,18 +80,20 @@ $dir/../node_modules/.bin/coffee -e '
     ' | (source /dev/stdin
 
 if [ -z "$Exec" -o -z "$Package" ] ; then
-  echo
-  echo '*** Error: package.json must contain at least "name" and "scripts":{"start":...} values. ***' >&2
-  echo
+  fatecho '*** Error: package.json must contain at least "name" and "scripts":{"start":...} values. ***' >&2
   exit 1
 fi
 
 export Command=${Exec%% *}
 export CommandArgs=${Exec#* }
 
-if [ node \!= $Command ] ; then
-  Command=node_modules/.bin/$Command
-fi
+# some vars to preserve in nginx files
+
+for keepit in uri is_args args host http_upgrade remote_addr proxy_add_x_forwarded_for ; do
+  export $keepit=\$${keepit}
+done
+
+[[ node = $Command ]] || Command=node_modules/.bin/$Command
 
 Name=node-$Package
 
@@ -94,9 +110,15 @@ for src in *; do
 
   mkdir -p $RDIR/$dstdir
   envsubst < $src > $RDIR/$dst
-  # echo ------
-  # cat $RDIR/$dst
+  if [[ $verbose ]] ; then 
+    echo -e '\E[37;44m'
+    echo -e $dst '\E[0m'
+    cat $RDIR/$dst
+  fi
 done
+
+[[ $nbWeb ]] || rm -fr $RDIR/etc/nginx/
+[[ $nbSsl ]] || rm -fr $RDIR/etc/nginx/*-ssl
 
 cat > $TDIR/control <<EOD
 Source: $Package
@@ -166,6 +188,5 @@ echo 2.0 > debian-binary
 debfile=$pdir/$Package.deb
 ar r$DEBUG $debfile debian-binary control.tar.gz data.tar.gz 2>/dev/null
 
-fatecho $debfile created.
-
+fatecho "$debfile created."
 )
