@@ -4,7 +4,7 @@ server {
     server_name $nbWeb;
 
     location / {
-        proxy_pass http://unix:/var/run/proxy.sock/www.localnet.80:$uri$is_args$args;
+        proxy_pass http://unix:/var/run/proxy.sock/$Name.80:$uri$is_args$args;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';

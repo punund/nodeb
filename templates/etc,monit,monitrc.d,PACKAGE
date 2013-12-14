@@ -1,4 +1,4 @@
-check process configly-api with pidfile "/var/run/$Name.pid"
+check process $Name with pidfile "/var/run/$Name.pid"
     start program = "/sbin/start $Name"
     stop program = "/sbin/stop $Name"
     if failed port $nbPort with timeout 15 seconds then restart

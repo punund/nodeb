@@ -9,10 +9,15 @@ export nbUser=node
 export nbWeb=
 export nbSsl=
 
+proxy_sock=/var/run/proxy.sock
+
 dir=`dirname $(readlink -f $0)`
 
-while getopts "p:tu:w:sv" opt; do
+while getopts "p:tu:w:svn" opt; do
   case $opt in
+    n)
+      nbNoassets='--exclude=node_modules --exclude=bower_components --exclude=components'
+      ;;
     u)
       nbUser=$OPTARG
       ;;
@@ -23,12 +28,12 @@ while getopts "p:tu:w:sv" opt; do
       nbSsl=1
       ;;
     t)
-      if [ -e nodeb_templates ] ; then
+      [[ -e nodeb_templates ]] && {
         fatecho \"nodeb_templates\" exists, delete it first. Not executing. >&2
-      else
+      } || {
         cp -a $dir/../templates nodeb_templates/
         echo nodeb_templates/ created.
-      fi
+      }
       exit 0
       ;;
     v)
@@ -42,11 +47,12 @@ while getopts "p:tu:w:sv" opt; do
 
   Valid options:
 
+  -n don't include node_modules/, bower_components/, components/ in the package
   -p <port to monitor> (default 80) 
   -s also generate nginx config for SSL server
   -t copy templates to nodeb_templates/ for customization and exit
   -u <user to run processes as> (default "node")
-  -v show generated files to stdout
+  -v show generated files on stdout
   -w <production website address>. If given, nginx config files will be created
 
 EOH
@@ -75,14 +81,14 @@ $dir/../node_modules/.bin/coffee -e '
     Architecture=all
     Depends="${nodejs:Depends}"
     Description="#{pkg.description}"
-    Exec="#{pkg.scripts.start}"
+    Exec="#{pkg.config.start}"
     """
     ' | (source /dev/stdin
 
-if [ -z "$Exec" -o -z "$Package" ] ; then
-  fatecho '*** Error: package.json must contain at least "name" and "scripts":{"start":...} values. ***' >&2
+[[ -z "$Exec" || -z "$Package" ]] && {
+  fatecho '*** Error: package.json must contain at least "name" and "config":{"start":...} values. ***' >&2
   exit 1
-fi
+}
 
 export Command=${Exec%% *}
 export CommandArgs=${Exec#* }
@@ -97,11 +103,9 @@ done
 
 Name=node-$Package
 
-if [ -d nodeb_templates ] ; then
-  cd nodeb_templates
-else
+[[ -d nodeb_templates ]] &&
+  cd nodeb_templates ||
   cd $dir/../templates
-fi
 
 for src in *; do
   dst=${src//,//}
@@ -110,11 +114,11 @@ for src in *; do
 
   mkdir -p $RDIR/$dstdir
   envsubst < $src > $RDIR/$dst
-  if [[ $verbose ]] ; then 
+  [[ $verbose ]] && {
     echo -e '\E[37;44m'
     echo -e $dst '\E[0m'
     cat $RDIR/$dst
-  fi
+  }
 done
 
 [[ $nbWeb ]] || rm -fr $RDIR/etc/nginx/
@@ -133,30 +137,59 @@ EOD
 
 cat > $TDIR/postinst <<EOD
 chown -R $nbUser /opt/$Package
-if [ \! -d /opt/$Package/node_modules ] ; then
+
+[ -d /opt/$Package/node_modules ] || {
   echo "Running npm...."
   cd /opt/$Package
   sudo -H -u $nbUser npm i
-fi
+  [ -x node_modules/.bin/bower ] && {
+    echo "Running bower..."
+    sudo -H -u $nbUser node_modules/.bin/bower install
+  }
+  [ -x node_modules/.bin/component ] && {
+    echo "Running component..."
+    sudo -H -u $nbUser node_modules/.bin/component install
+  }
+}
 echo "Starting $Name"
 start $Name
 EOD
 
+[[ $nbWeb ]] &&
+  cat >> $TDIR/postinst <<EOD
+
+cd /etc/nginx/sites-enabled
+ln -s -f ../sites-available/$Name .
+ln -s ../sites-available/${Name}-ssl . 2>/dev/null
+
+[ -d $proxy_sock ] || {
+  mkdir $proxy_sock
+  chown www-data:www-data $proxy_sock
+  chmod 3730 $proxy_sock
+}
+
+echo "Restarting nginx"
+service nginx restart
+EOD
+
+
 cat > $TDIR/preinst <<EOD
-if [ \! -x /usr/bin/nodejs ] ; then
+
+dpkg -s nodejs >/dev/null 2>&1 || {
   echo
   echo /usr/bin/nodejs is required. Abort.
   echo 
   exit 1
-fi  
-if id $nbUser > /dev/null 2>&1 ; then
+}
+
+id $nbUser > /dev/null 2>&1 && {
   ln -f -s /usr/bin/nodejs /usr/bin/node
-else
+} || {
   echo
   echo Please create user "$nbUser" first.  Abort.
   echo 
   exit 1
-fi
+}
 EOD
 
 cat > $TDIR/prerm <<EOD
@@ -176,7 +209,7 @@ tar -C $pdir \
   --xform="s:^.:opt/$Package:" \
   --exclude-backups --exclude-vcs \
   --exclude=nodeb_templates \
-  --exclude=*.deb \
+  --exclude=*.deb  $nbNoassets \
   -r${DEBUG}f $TDIR/data.tar .
 
 cd $TDIR

@@ -4,14 +4,13 @@ server {
     server_name $nbWeb;
 
     ssl    on; 
-    ssl_certificate        cert/localhost.pem; 
-    ssl_certificate_key    cert/localhost.key; 
+    ssl_certificate        /opt/ssl/$Package/production.pem;
+    ssl_certificate_key    /opt/ssl/$Package/production.key;
 
-    add_header Strict-Transport-Security max-age=500; 
+    # add_header Strict-Transport-Security max-age=500; 
 
     location / {
-        proxy_pass http://unix:/var/run/proxy.sock/www.localnet.443:$uri$is_args$args;
-        #proxy_pass http://localhost:3443;
+        proxy_pass http://unix:/var/run/proxy.sock/$Name.443:$uri$is_args$args;
         proxy_cache_bypass $http_upgrade;
         proxy_redirect off;
         proxy_http_version 1.1;
