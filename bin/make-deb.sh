@@ -68,7 +68,7 @@ RDIR=`mktemp -d`
 
 trap "rm -fr $TDIR $RDIR" SIGHUP SIGINT SIGTERM SIGQUIT EXIT
 
-$dir/../node_modules/.bin/coffee -e '
+node_modules/.bin/coffee -e '
   pkg = require "./package.json"
 
   console.log """
