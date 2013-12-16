@@ -1,5 +1,8 @@
 ## Packaging node.js application into a .deb file
 
+Use this script to prepare your `node.js` web application for deployment on Debian-based system (only Ubuntu is tested).
+You don't need any Debian tools for that, just the shell, `tar` and `ar`.
+
 ### Installation
 
     npm install nodeb
@@ -26,7 +29,7 @@ If all goes well, `<project name>.deb` file will be created.
 
 The package will be installed in `/opt`.
 
-Files for upstart, monit, logrotate, and optionally nginx are created.  If `node_modules/` was absent, `npm install`
+Files for `upstart`, `monit`, `logrotate`, and optionally `nginx` are created.  If `node_modules/` is absent, `npm install`
 will be run on target system.
 
 If `-s` option is given, nginx configuration for https reverse proxy server is generated.  Study the

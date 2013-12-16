@@ -1,6 +1,6 @@
 {
   "name": "nodeb",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Converting node.js application into a Debian package",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
