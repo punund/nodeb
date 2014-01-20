@@ -140,14 +140,6 @@ chown -R $nbUser /opt/$Package
   echo "Running npm...."
   cd /opt/$Package
   sudo -H -u $nbUser npm i
-  [ -x node_modules/.bin/bower ] && {
-    echo "Running bower..."
-    sudo -H -u $nbUser node_modules/.bin/bower install
-  }
-  [ -x node_modules/.bin/component ] && {
-    echo "Running component..."
-    sudo -H -u $nbUser node_modules/.bin/component install
-  }
 }
 echo "Starting $Name"
 start $Name
@@ -176,7 +168,7 @@ cat > $TDIR/preinst <<EOD
 dpkg -s nodejs >/dev/null 2>&1 || {
   echo
   echo /usr/bin/nodejs is required. Abort.
-  echo 
+  echo
   exit 1
 }
 
@@ -185,7 +177,7 @@ id $nbUser > /dev/null 2>&1 && {
 } || {
   echo
   echo Please create user "$nbUser" first.  Abort.
-  echo 
+  echo
   exit 1
 }
 EOD
