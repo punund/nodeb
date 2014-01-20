@@ -99,8 +99,6 @@ for keepit in uri is_args args host http_upgrade remote_addr proxy_add_x_forward
   export $keepit=\$${keepit}
 done
 
-[[ node = $Command ]] || Command=node_modules/.bin/$Command
-
 Name=node-$Package
 
 [[ -d nodeb_templates ]] &&
