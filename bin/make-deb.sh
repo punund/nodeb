@@ -99,8 +99,6 @@ for keepit in uri is_args args host http_upgrade remote_addr proxy_add_x_forward
   export $keepit=\$${keepit}
 done
 
-[[ node = $Command ]] || Command=node_modules/.bin/$Command
-
 Name=node-$Package
 
 [[ -d nodeb_templates ]] &&
@@ -142,14 +140,6 @@ chown -R $nbUser /opt/$Package
   echo "Running npm...."
   cd /opt/$Package
   sudo -H -u $nbUser npm i
-  [ -x node_modules/.bin/bower ] && {
-    echo "Running bower..."
-    sudo -H -u $nbUser node_modules/.bin/bower install
-  }
-  [ -x node_modules/.bin/component ] && {
-    echo "Running component..."
-    sudo -H -u $nbUser node_modules/.bin/component install
-  }
 }
 echo "Starting $Name"
 start $Name
@@ -178,7 +168,7 @@ cat > $TDIR/preinst <<EOD
 dpkg -s nodejs >/dev/null 2>&1 || {
   echo
   echo /usr/bin/nodejs is required. Abort.
-  echo 
+  echo
   exit 1
 }
 
@@ -187,7 +177,7 @@ id $nbUser > /dev/null 2>&1 && {
 } || {
   echo
   echo Please create user "$nbUser" first.  Abort.
-  echo 
+  echo
   exit 1
 }
 EOD
