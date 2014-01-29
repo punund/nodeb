@@ -8,18 +8,22 @@ export nbPort=80
 export nbUser=node
 export nbWeb=
 export nbSsl=
+export nbNoins=
 
 proxy_sock=/var/run/proxy.sock
 
 dir=`dirname $(readlink -f $0)`
 
-while getopts "p:tu:w:svn" opt; do
+while getopts "p:tu:w:sovn" opt; do
   case $opt in
     n)
       nbNoassets='--exclude=node_modules --exclude=bower_components --exclude=components'
       ;;
     u)
       nbUser=$OPTARG
+      ;;
+    o)
+      nbNoins=1
       ;;
     p)
       nbPort=$OPTARG
@@ -48,8 +52,9 @@ while getopts "p:tu:w:svn" opt; do
   Valid options:
 
   -n don't include node_modules/, bower_components/, components/ in the package
+  -o don't generate nginx config for insecure (http) server
   -p <port to monitor> (default 80) 
-  -s also generate nginx config for SSL server
+  -s generate nginx config for secure (https) server
   -t copy templates to nodeb_templates/ for customization and exit
   -u <user to run processes as> (default "node")
   -v show generated files on stdout
@@ -81,17 +86,16 @@ node_modules/.bin/coffee -e '
     Architecture=all
     Depends="${nodejs:Depends}"
     Description="#{pkg.description}"
-    Exec="#{pkg.config.start}"
     """
     ' | (source /dev/stdin
 
-[[ -z "$Exec" || -z "$Package" ]] && {
-  fatecho '*** Error: package.json must contain at least "name" and "config":{"start":...} values. ***' >&2
+[[ -z "$Package" ]] && {
+  fatecho '*** Error: package.json must contain at least "name" value. ***' >&2
   exit 1
 }
 
-export Command=${Exec%% *}
-export CommandArgs=${Exec#* }
+#export Command=${Exec%% *}
+#export CommandArgs=${Exec#* }
 
 # some vars to preserve in nginx files
 
@@ -119,8 +123,9 @@ for src in *; do
   }
 done
 
-[[ $nbWeb ]] || rm -fr $RDIR/etc/nginx/
-[[ $nbSsl ]] || rm -fr $RDIR/etc/nginx/*-ssl
+[[ $nbWeb ]]   || rm -fr $RDIR/etc/nginx/
+[[ $nbSsl ]]   || rm -fr $RDIR/etc/nginx/sites-available/node-$Package-ssl
+[[ $nbNoins ]] && rm -fr $RDIR/etc/nginx/sites-available/node-$Package
 
 cat > $TDIR/control <<EOD
 Source: $Package
@@ -136,13 +141,30 @@ EOD
 cat > $TDIR/postinst <<EOD
 chown -R $nbUser /opt/$Package
 
+
 [ -d /opt/$Package/node_modules ] || {
+  command -v npm >/dev/null 2>&1 || { 
+    echo >&2 "I require npm but it's not installed.  Aborting."
+    exit 1
+  }
   echo "Running npm...."
   cd /opt/$Package
   sudo -H -u $nbUser npm i
 }
 echo "Starting $Name"
 start $Name
+EOD
+
+[[ $nbSsl ]] &&
+  cat >> $TDIR/postinst <<EOD
+
+mkdir -p /opt/ssl/$Package
+echo
+echo Make sure you have you SSL files in place:
+echo    certificate in /opt/ssl/$Package/production.pem
+echo    pricate key in /opt/ssl/$Package/production.key
+echo
+
 EOD
 
 [[ $nbWeb ]] &&
