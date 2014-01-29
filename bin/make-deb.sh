@@ -11,6 +11,7 @@ export nbSsl=
 export nbNoins=
 
 proxy_sock=/var/run/proxy.sock
+web_server_group=www-data
 
 dir=`dirname $(readlink -f $0)`
 
@@ -73,29 +74,30 @@ RDIR=`mktemp -d`
 
 trap "rm -fr $TDIR $RDIR" SIGHUP SIGINT SIGTERM SIGQUIT EXIT
 
-node_modules/.bin/coffee -e '
-  pkg = require "./package.json"
+node -e '
+  pkg = require("./package.json")
 
-  console.log """
-    set -a
-    Source="#{pkg.name}"
-    Package="#{pkg.name}"
-    Version="#{pkg.version}"
-    Priority=extra
-    Maintainer="#{pkg.author}"
-    Architecture=all
-    Depends="${nodejs:Depends}"
-    Description="#{pkg.description}"
-    """
-    ' | (source /dev/stdin
+  console.log("set -a")
+  console.log("Source=" + pkg.name)
+  console.log("Package=" + pkg.name)
+  console.log("Version=" + pkg.version)
+  console.log("Priority=extra")
+  console.log("Maintainer=\"" + pkg.author + "\"")
+  console.log("Architecture=all")
+  console.log("Depends=\"${nodejs:Depends}\"")
+  console.log("Description=\"" + pkg.description + "\"")
+  console.log("Exec=\"" + pkg.config.start + "\"")
+    ' | { source /dev/stdin
 
-[[ -z "$Package" ]] && {
-  fatecho '*** Error: package.json must contain at least "name" value. ***' >&2
+if [ -z "$Exec" -o -z "$Package" ] ; then
+  echo
+  echo '*** Error: package.json must contain at least "name" and "config":{"start":...} values. ***' >&2
+  echo
   exit 1
-}
+fi
 
-#export Command=${Exec%% *}
-#export CommandArgs=${Exec#* }
+export Command=${Exec%% *}
+export CommandArgs=${Exec#* }
 
 # some vars to preserve in nginx files
 
@@ -108,6 +110,10 @@ Name=node-$Package
 [[ -d nodeb_templates ]] &&
   cd nodeb_templates ||
   cd $dir/../templates
+
+[[ $nbWeb ]]   || rm -fr $RDIR/etc/nginx/
+[[ $nbSsl ]]   || rm -fr $RDIR/etc/nginx/sites-available/node-$Package-ssl
+[[ $nbNoins ]] && rm -fr $RDIR/etc/nginx/sites-available/node-$Package
 
 for src in *; do
   dst=${src//,//}
@@ -123,9 +129,6 @@ for src in *; do
   }
 done
 
-[[ $nbWeb ]]   || rm -fr $RDIR/etc/nginx/
-[[ $nbSsl ]]   || rm -fr $RDIR/etc/nginx/sites-available/node-$Package-ssl
-[[ $nbNoins ]] && rm -fr $RDIR/etc/nginx/sites-available/node-$Package
 
 cat > $TDIR/control <<EOD
 Source: $Package
@@ -140,7 +143,7 @@ EOD
 
 cat > $TDIR/postinst <<EOD
 chown -R $nbUser /opt/$Package
-
+adduser $nbUser $web_server_group
 
 [ -d /opt/$Package/node_modules ] || {
   command -v npm >/dev/null 2>&1 || { 
@@ -161,8 +164,8 @@ EOD
 mkdir -p /opt/ssl/$Package
 echo
 echo Make sure you have you SSL files in place:
-echo    certificate in /opt/ssl/$Package/production.pem
-echo    pricate key in /opt/ssl/$Package/production.key
+echo "    certificate in /opt/ssl/$Package/production.pem"
+echo "    private key in /opt/ssl/$Package/production.key"
 echo
 
 EOD
@@ -177,8 +180,9 @@ ln -s ../sites-available/${Name}-ssl . 2>/dev/null
 [ -d $proxy_sock ] || {
   mkdir $proxy_sock
   chown www-data:www-data $proxy_sock
-  chmod 3730 $proxy_sock
 }
+
+chmod 3770 $proxy_sock
 
 echo "Restarting nginx"
 service nginx restart
@@ -234,4 +238,4 @@ debfile=$pdir/$Package.deb
 ar r$DEBUG $debfile debian-binary control.tar.gz data.tar.gz 2>/dev/null
 
 fatecho "$debfile created."
-)
+}

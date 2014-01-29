@@ -17,19 +17,21 @@ If all goes well, `<project name>.deb` file will be created.
 
 ### Options
 
-    -n do not include node_modules/, bower_components/, components/ in the package
+    -n don't include node_modules/, bower_components/, components/ in the package
+    -o don't generate nginx config for insecure (http) server
     -p <port to monitor> (default 80) 
-    -s also generate nginx config for SSL server
+    -s generate nginx config for secure (https) server
     -t copy templates to nodeb_templates/ for customization and exit
     -u <user to run processes as> (default "node")
-    -v show generated files to stdout
+    -v show generated files on stdout
     -w <production website address>. If given, nginx config files will be created
+
 
 ### What's included
 
 The package will be installed in `/opt`.
 
-Files for `upstart`, `monit`, `logrotate`, and optionally `nginx` are created.  If `node_modules/` is absent, `npm install`
+Files for `upstart`, `monit`, `logrotate`, and optionally `nginx` are created.  `npm install`
 will be run on target system.
 
 If `-s` option is given, nginx configuration for https reverse proxy server is generated.  Study the

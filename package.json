@@ -1,6 +1,6 @@
 {
   "name": "nodeb",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "description": "Converting node.js application into a Debian package",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -8,9 +8,6 @@
   "repository": {
     "type": "git",
     "url": "git://github.com/punund/nodeb.git"
-  },
-  "dependencies": {
-    "coffee-script": "1.6"
   },
   "keywords": [
     "node",
