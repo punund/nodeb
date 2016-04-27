@@ -1,11 +1,17 @@
 ## Packaging node.js application into a .deb file
 
 Use this script to prepare your `node.js` web application for deployment on Debian-based system (only Ubuntu is tested).
-You don't need any Debian tools for that, just the shell, `tar` and `ar`.
+You don't need any Debian tools for that, just the shell, `tar` and `ar`.  Your package.json must contain a config>start section IE
+
+```
+"config" : {
+    "start" : "node server.js"
+}
+```
 
 ### Installation
 
-    npm install nodeb
+    sudo npm install -g nodeb
 
 ### Invocation
 
